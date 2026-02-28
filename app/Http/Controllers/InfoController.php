@@ -27,8 +27,8 @@ class InfoController extends Controller
     public function clientInfo()
     {
         $dto = new ClientInfoDTO(
-            request()->ip(),
-            request()->userAgent()
+            htmlspecialchars(request()->ip(),ENT_QUOTES, 'UTF-8'), 
+            htmlspecialchars(request()->userAgent(),ENT_QUOTES, 'UTF-8'),
         );
 
         return response()->json($dto->toArray());

@@ -1,7 +1,7 @@
 <?php
 
 namespace App\DTO;
-
+// Почему при ридонли запись,почистить
 class ServerInfoDTO
 {
     public readonly string $php_version;
