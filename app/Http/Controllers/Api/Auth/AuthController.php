@@ -1,16 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
     /**
      * Авторизация пользователя.
      */
-    public function login(): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
         return response()->json(['message' => 'login'], 200);
     }
@@ -18,7 +23,7 @@ class AuthController extends Controller
     /**
      * Регистрация нового пользователя.
      */
-    public function register(): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
         return response()->json(['message' => 'register'], 201);
     }
@@ -26,7 +31,7 @@ class AuthController extends Controller
     /**
      * Получение данных авторизованного пользователя.
      */
-    public function me(): JsonResponse
+    public function me(Request $request): JsonResponse
     {
         return response()->json(['message' => 'me'], 200);
     }
@@ -34,7 +39,7 @@ class AuthController extends Controller
     /**
      * Разлогинивание (отзыв текущего токена).
      */
-    public function out(): JsonResponse
+    public function out(Request $request): JsonResponse
     {
         return response()->json(['message' => 'out'], 200);
     }
@@ -42,7 +47,7 @@ class AuthController extends Controller
     /**
      * Список активных токенов пользователя.
      */
-    public function tokens(): JsonResponse
+    public function tokens(Request $request): JsonResponse
     {
         return response()->json(['message' => 'tokens'], 200);
     }
@@ -50,7 +55,7 @@ class AuthController extends Controller
     /**
      * Разлогинивание со всех устройств.
      */
-    public function outAll(): JsonResponse
+    public function outAll(Request $request): JsonResponse
     {
         return response()->json(['message' => 'out_all'], 200);
     }
@@ -58,7 +63,7 @@ class AuthController extends Controller
     /**
      * Обновление пары токенов по refresh токену.
      */
-    public function refresh(): JsonResponse
+    public function refresh(Request $request): JsonResponse
     {
         return response()->json(['message' => 'refresh'], 200);
     }
