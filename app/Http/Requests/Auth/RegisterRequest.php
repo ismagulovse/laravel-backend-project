@@ -22,14 +22,7 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'username' => [ 'required','string', 'min:7', 'regex:/^[A-Z][a-zA-Z]*$/',
-                (new Unique('users', 'username'))->where(
-                    fn($query) => $query->whereRaw(
-                        'LOWER(username) = ?',
-                        [strtolower($this->input('username', ''))]
-                    )
-                ),
-            ],
+            'username' => [ 'required','string', 'min:7', 'regex:/^[A-Z][a-zA-Z]*$/'],
             'email' => ['required','email','unique:users,email',],
             'password' => [ 'required', 'string', 'min:8', 'regex:/[0-9]/', 'regex:/[^a-zA-Z0-9]/', 'regex:/[A-Z]/', 'regex:/[a-z]/',],
             'c_password' => ['required','string','same:password',],
@@ -41,14 +34,38 @@ class RegisterRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v): void {
+
             $birthday = $this->input('birthday');
 
-            if ($birthday === null) {
-                return;
+            if ($birthday !== null) {
+
+               
+                $date = Carbon::parse($birthday);
+
+                $datePlus14 = $date->copy()->addYears(14);
+
+                if ($datePlus14->isAfter(now())) {
+
+                    $v->errors()->add(
+                        'birthday',
+                        'Вам должно быть не менее 14 лет для регистрации.'
+                    );
+                }
             }
 
-            if (Carbon::parse($birthday)->addYears(14)->isAfter(now())) {
-                $v->errors()->add('birthday','Вам должно быть не менее 14 лет для регистрации.');
+            $username = strtolower($this->input('username', ''));
+
+            $userExists = \App\Models\User::whereRaw(
+                'LOWER(username) = ?',
+                [$username]
+            )->exists();
+
+            if ($userExists) {
+                
+                $v->errors()->add(
+                    'username',
+                    'Это имя пользователя уже занято.'
+                );
             }
         });
     }
