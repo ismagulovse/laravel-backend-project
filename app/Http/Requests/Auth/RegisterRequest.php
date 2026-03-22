@@ -10,9 +10,10 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\Validator;
 
-
+//Првоерить оишбку 500, почему возращается, и как вывести все ошибки, а не первую.
 class RegisterRequest extends FormRequest
 {
+    protected $stopOnFirstFailure = false;
 
     public function authorize(): bool
     {
@@ -39,7 +40,6 @@ class RegisterRequest extends FormRequest
 
             if ($birthday !== null) {
 
-               
                 $date = Carbon::parse($birthday);
 
                 $datePlus14 = $date->copy()->addYears(14);

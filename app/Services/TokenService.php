@@ -48,22 +48,28 @@ class TokenService implements TokenServiceInterface
         ];
     }
 
+    private function base64UrlEncode(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    
+    }
+       
     private function generateSignedToken(int $userId, string $type): string
     {
-       
-        $header = base64_encode(json_encode([
+        $header = $this->base64UrlEncode(json_encode([
             'alg' => 'HS256',
             'typ' => 'JWT',
         ]));
 
-        $payload = base64_encode(json_encode([
-            'uid'  => $userId,      
-            'jti' => Str::random(32),              
-            'exp'  => $type === 'access'          
+        $payload = $this->base64UrlEncode(json_encode([
+            'uid' => $userId,
+            'jti' => Str::random(32),
+            'exp' => $type === 'access'
                 ? now()->addMinutes($this->accessTtl)->timestamp
                 : now()->addMinutes($this->refreshTtl)->timestamp,
         ]));
-        $signature = base64_encode(
+
+        $signature = $this->base64UrlEncode(
             hash_hmac('sha256', $header . '.' . $payload, $this->getSecret(), true)
         );
 
@@ -113,6 +119,9 @@ class TokenService implements TokenServiceInterface
             ->first();
     }
 
+    //Проверить отработку рефреш токена
+    //Как удаляется рефреш
+    
     public function revokeToken(Token $token): void
     {
         $token->update(['is_revoked' => true]);

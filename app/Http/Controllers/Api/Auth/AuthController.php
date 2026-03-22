@@ -85,7 +85,7 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->input('__auth_user');
+        $user = $request->attributes->get('__auth_user');
 
         if (!$user) {
             return response()->json([
@@ -119,7 +119,7 @@ class AuthController extends Controller
   
    public function tokens(Request $request): JsonResponse
     {
-        $user = $request->input('__auth_user');
+        $user = $request->attributes->get('__auth_user');
 
         $tokens = $user->activeTokens()
             ->get()
@@ -138,7 +138,7 @@ class AuthController extends Controller
 
     public function outAll(Request $request): JsonResponse
         {
-            $user = $request->input('__auth_user');
+            $user = $request->attributes->get('__auth_user');
 
             $this->tokenService->revokeAllUserTokens($user);
 
