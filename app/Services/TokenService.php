@@ -48,34 +48,32 @@ class TokenService implements TokenServiceInterface
         ];
     }
 
-    private function base64UrlEncode(string $data): string
-    {
-        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
-    
-    }
-       
-    private function generateSignedToken(int $userId, string $type): string
-    {
-        $header = $this->base64UrlEncode(json_encode([
-            'alg' => 'HS256',
-            'typ' => 'JWT',
-        ]));
+private function generateSignedToken(int $userId, string $type): string
+{
+    $header = base64_encode(json_encode([
+        'alg' => 'HS256',
+        'typ' => 'JWT',
+    ]));
 
-        $payload = $this->base64UrlEncode(json_encode([
-            'uid' => $userId,
-            'jti' => Str::random(32),
-            'exp' => $type === 'access'
-                ? now()->addMinutes($this->accessTtl)->timestamp
-                : now()->addMinutes($this->refreshTtl)->timestamp,
-        ]));
+    $payload = base64_encode(json_encode([
+        'uid' => $userId,
+        'jti' => Str::random(32),
+        'exp' => $type === 'access'
+            ? now()->addMinutes($this->accessTtl)->timestamp
+            : now()->addMinutes($this->refreshTtl)->timestamp,
+    ]));
 
-        $signature = $this->base64UrlEncode(
-            hash_hmac('sha256', $header . '.' . $payload, $this->getSecret(), true)
-        );
+    $signature = base64_encode(
+        hash_hmac(
+            'sha256',
+            $header . '.' . $payload,
+            $this->getSecret(),
+            true
+        )
+    );
 
-        return $header . '.' . $payload . '.' . $signature;
-    }
-
+    return $header . '.' . $payload . '.' . $signature;
+}    
     private function verifySignature(string $token): bool
     {
         $parts = explode('.', $token);
@@ -154,8 +152,8 @@ class TokenService implements TokenServiceInterface
 
         return $this->createTokenPair($tokenRecord->user);
     }
-
-  
+    
+    //если колличество больше нужного отозвать больше токенов до лимита.
     private function enforceTokenLimit(User $user): void
     {
         $activeTokens = $user->activeTokens()
