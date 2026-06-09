@@ -127,6 +127,14 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        // Отдельный канал для логов автоматического деплоя (Git Webhook).
+        'deployment' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/deployment.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];
