@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username',64)->unique();;
+            $table->string('username',64)->unique();
             $table->string('email', 128)->unique();
             $table->string('password');
             $table->date('date_of_birth');
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
-            $table->с('last_activity')->index();
+            $table->integer('last_activity')->index();
         });
     }
 

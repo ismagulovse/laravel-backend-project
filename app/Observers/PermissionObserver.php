@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Observers;
+
+use App\Models\Permission;
+use App\Services\AuditServiceInterface;
+
+class PermissionObserver
+{
+    public function __construct(private readonly AuditServiceInterface $auditService) {}
+
+    /**
+     * Логировать создание разрешения.
+     */
+    public function created(Permission $permission): void
+    {
+        $this->auditService->log($permission, [], $permission->getAttributes(), $this->actorId());
+    }
+
+    /**
+     * Логировать обновление разрешения.
+     */
+    public function updated(Permission $permission): void
+    {
+        $this->auditService->log($permission, $permission->getOriginal(), $permission->getAttributes(), $this->actorId());
+    }
+
+    /**
+     * Логировать мягкое удаление разрешения.
+     */
+    public function deleted(Permission $permission): void
+    {
+        $this->auditService->log($permission, $permission->getAttributes(), [], $this->actorId());
+    }
+
+    /**
+     * Логировать восстановление разрешения.
+     */
+    public function restored(Permission $permission): void
+    {
+        $this->auditService->log($permission, $permission->getOriginal(), $permission->getAttributes(), $this->actorId());
+    }
+
+    /**
+     * Логировать жёсткое удаление разрешения.
+     */
+    public function forceDeleted(Permission $permission): void
+    {
+        $this->auditService->log($permission, $permission->getAttributes(), [], $this->actorId());
+    }
+
+    /**
+     * ID текущего авторизованного пользователя.
+     * Берём из request (__auth_user кладёт middleware CheckAuth).
+     * Fallback = 1 (системный пользователь, например при сидах/в консоли).
+     */
+    private function actorId(): int
+    {
+        /** @var \App\Models\User|null $actor */
+        $actor = request()->attributes->get('__auth_user');
+
+        return (int) ($actor->id ?? 1);
+    }
+}

@@ -13,9 +13,9 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('role_id');
             $table->timestamp('created_at')->useCurrent();
-            $table->integer('created_by');
+            $table->unsignedBigInteger('created_by');
             $table->softDeletes();
-            $table->integer('deleted_by')->nullable();
+            $table->unsignedBigInteger('deleted_by')->nullable();
 
             $table->index('user_id');
             $table->index('role_id');

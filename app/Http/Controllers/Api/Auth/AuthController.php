@@ -17,6 +17,7 @@ use App\Models\UserRole;
 use App\Services\TokenServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -65,34 +66,38 @@ class AuthController extends Controller
         
         $dto = $request->toDTO();
 
-        $user = User::create([
-            'username' => $dto->username,
-            'email'    => $dto->email,
-            'password' => Hash::make($dto->password),
-            'birthday' => $dto->birthday,
-        ]);
+        $user = DB::transaction(function () use ($dto): User {
+            $user = User::create([
+                'username' => $dto->username,
+                'email'    => $dto->email,
+                'password' => Hash::make($dto->password),
+                'birthday' => $dto->birthday,
+            ]);
 
-        // После регистрации автоматически назначаем базовую роль guest.
-        $guestRole = Role::query()->where('slug', 'guest')->first();
-        if ($guestRole !== null) {
-            $link = UserRole::query()
-                ->withTrashed()
-                ->where('user_id', $user->id)
-                ->where('role_id', $guestRole->id)
-                ->first();
+            // После регистрации автоматически назначаем базовую роль guest.
+            $guestRole = Role::query()->where('slug', 'guest')->first();
+            if ($guestRole !== null) {
+                $link = UserRole::query()
+                    ->withTrashed()
+                    ->where('user_id', $user->id)
+                    ->where('role_id', $guestRole->id)
+                    ->first();
 
-            if ($link === null) {
-                UserRole::query()->create([
-                    'user_id' => (int) $user->id,
-                    'role_id' => (int) $guestRole->id,
-                    'created_by' => (int) $user->id,
-                ]);
-            } elseif ($link->trashed()) {
-                $link->restore();
-                $link->deleted_by = null;
-                $link->save();
+                if ($link === null) {
+                    UserRole::query()->create([
+                        'user_id'    => (int) $user->id,
+                        'role_id'    => (int) $guestRole->id,
+                        'created_by' => (int) $user->id,
+                    ]);
+                } elseif ($link->trashed()) {
+                    $link->restore();
+                    $link->deleted_by = null;
+                    $link->save();
+                }
             }
-        }
+
+            return $user;
+        });
 
         $tokens = $this->tokenService->createTokenPair($user);
         $user->load('roles');

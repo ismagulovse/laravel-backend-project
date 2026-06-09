@@ -11,28 +11,35 @@ use Illuminate\Http\Request;
 
 class CheckPermission
 {
-    public function handle(Request $request, Closure $next, array $permissionSlug): mixed
+    /**
+     * Проверить, есть ли у пользователя хотя бы одно из требуемых разрешений (логика "ИЛИ").
+     *
+     * @param Request $request
+     * @param Closure $next
+     * @param string  ...$permissionSlugs  Один или несколько slug разрешений из маршрута
+     * @return mixed
+     */
+    public function handle(Request $request, Closure $next, string ...$permissionSlugs): mixed
     {
         /** @var mixed $actor */
         $actor = $request->attributes->get('__auth_user');
 
         if ($actor !== null) {
-            dd($permissionSlug);
             $allowed = User::query()
                 ->whereKey((int) $actor->id)
-                ->whereHas('roles.permissions', fn ($query) => $query->where('slug', $permissionSlug))
+                ->whereHas('roles.permissions', fn ($query) => $query->whereIn('slug', $permissionSlugs))
                 ->exists();
         } else {
             // Для неавторизованных считаем, что действует роль guest.
             $allowed = Role::query()
                 ->where('slug', 'guest')
-                ->whereHas('permissions', fn ($query) => $query->where('slug', $permissionSlug))
+                ->whereHas('permissions', fn ($query) => $query->whereIn('slug', $permissionSlugs))
                 ->exists();
         }
 
         if (!$allowed) {
             return response()->json([
-                'error' => 'Access denied. Required permission: ' . $permissionSlug,
+                'error' => 'Access denied. Required permission: ' . implode(' or ', $permissionSlugs),
             ], 403);
         }
 

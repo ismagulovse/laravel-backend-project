@@ -12,6 +12,7 @@ use App\Http\Requests\Policy\UpdateRoleRequest;
 use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
@@ -49,13 +50,14 @@ class RoleController extends Controller
     {
         $dto = $request->toDTO();
 
-        // created_by берём из авторизованного пользователя.
-        $model = Role::query()->create([
-            'name' => $dto->name,
-            'slug' => $dto->slug,
-            'description' => $dto->description,
-            'created_by' => $dto->createdBy,
-        ]);
+        $model = DB::transaction(function () use ($dto): Role {
+            return Role::query()->create([
+                'name'        => $dto->name,
+                'slug'        => $dto->slug,
+                'description' => $dto->description,
+                'created_by'  => $dto->createdBy,
+            ]);
+        });
 
         return response()->json($this->toDTO($model)->toArray(), 201);
     }
@@ -71,12 +73,14 @@ class RoleController extends Controller
 
         $dto = $request->toDTO();
 
-        $model->fill([
-            'name' => $dto->name,
-            'slug' => $dto->slug,
-            'description' => $dto->description,
-        ]);
-        $model->save();
+        DB::transaction(function () use ($model, $dto): void {
+            $model->fill([
+                'name'        => $dto->name,
+                'slug'        => $dto->slug,
+                'description' => $dto->description,
+            ]);
+            $model->save();
+        });
 
         return response()->json($this->toDTO($model)->toArray(), 200);
     }
@@ -93,10 +97,11 @@ class RoleController extends Controller
         /** @var mixed $actor */
         $actor = $request->attributes->get('__auth_user');
 
-        // Сохраняем, кто удалил роль, затем делаем мягкое удаление.
-        $model->deleted_by = (int) ($actor->id ?? 0);
-        $model->save();
-        $model->delete();
+        DB::transaction(function () use ($model, $actor): void {
+            $model->deleted_by = (int) ($actor->id ?? 0);
+            $model->save();
+            $model->delete();
+        });
 
         return response()->json(['message' => 'Role soft deleted.'], 200);
     }
@@ -114,9 +119,11 @@ class RoleController extends Controller
             return response()->json(['error' => 'Role is not deleted.'], 400);
         }
 
-        $model->restore();
-        $model->deleted_by = null;
-        $model->save();
+        DB::transaction(function () use ($model): void {
+            $model->restore();
+            $model->deleted_by = null;
+            $model->save();
+        });
 
         return response()->json($this->toDTO($model)->toArray(), 200);
     }

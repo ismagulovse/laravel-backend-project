@@ -1,0 +1,102 @@
+
+@baseUrl = http://127.0.0.1:8000/api
+
+# id роли и id лога заполняются вручную после соответствующих запросов:
+@roleId = 4
+@logId = 2
+
+
+### 1. Логин администратором — получаем токен.
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "Adminuser",
+  "password": "Password1!"
+}
+
+### Токен из ответа предыдущего запроса (подставляется автоматически).
+@token = {{login.response.body.access_token}}
+
+
+### 2. Создать роль (сработает Observer -> created).
+
+POST {{baseUrl}}/ref/policy/role
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Test Role",
+  "slug": "test-role",
+  "description": "Первое описание"
+}
+
+
+### 3. Изменить роль (Observer -> updated). Меняем только description.
+PUT {{baseUrl}}/ref/policy/role/{{roleId}}
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Test Role",
+  "slug": "test-role",
+  "description": "Изменённое описание"
+}
+
+
+### 4. История роли (пункты 5, 9, 12).
+
+GET {{baseUrl}}/ref/policy/role/{{roleId}}/story
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### 5. Откат к состоянию ДО изменения (Undo, пункт 10).
+POST {{baseUrl}}/ref/changelog/{{logId}}/restore
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### 6. История роли ещё раз — должен добавиться лог самого отката.
+GET {{baseUrl}}/ref/policy/role/{{roleId}}/story
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+
+### 7. Логин обычным пользователем.
+# @name loginUser
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "Simpleuser",
+  "password": "Password1!"
+}
+
+@userToken = {{loginUser.response.body.access_token}}
+
+
+### 8. Попытка посмотреть историю обычным пользователем — ожидаем 403.
+GET {{baseUrl}}/ref/policy/role/{{roleId}}/story
+Accept: application/json
+Authorization: Bearer {{userToken}}
+
+
+
+
+### 9. История пользователя №1.
+GET {{baseUrl}}/ref/user/1/story
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### 10. История разрешения №1.
+GET {{baseUrl}}/ref/policy/permission/1/story
+Accept: application/json
+Authorization: Bearer {{token}}

@@ -19,6 +19,9 @@ class PermissionsSeeder extends Seeder
         $actions = ['get-list', 'read', 'create', 'update', 'delete', 'restore'];
         $entities = ['user', 'role', 'permission'];
 
+        // Разрешения для просмотра истории изменений — только для администраторов.
+        $storyPermissions = ['get-story-user', 'get-story-role', 'get-story-permission'];
+
         foreach ($entities as $entity) {
             foreach ($actions as $action) {
                 $slug = $action . '-' . $entity;
@@ -47,6 +50,34 @@ class PermissionsSeeder extends Seeder
                     $permission->deleted_by = null;
                     $permission->save();
                 }
+            }
+        }
+
+        foreach ($storyPermissions as $slug) {
+            $name = strtoupper($slug);
+            $entity = explode('-', $slug)[2];
+            $description = 'Permission to view change history of "' . $entity . '".';
+
+            $permission = Permission::query()->withTrashed()->where('slug', $slug)->first();
+
+            if ($permission === null) {
+                Permission::query()->create([
+                    'name'        => $name,
+                    'slug'        => $slug,
+                    'description' => $description,
+                    'created_by'  => $actorId,
+                ]);
+                continue;
+            }
+
+            $permission->name = $name;
+            $permission->description = $description;
+            $permission->save();
+
+            if ($permission->trashed()) {
+                $permission->restore();
+                $permission->deleted_by = null;
+                $permission->save();
             }
         }
     }

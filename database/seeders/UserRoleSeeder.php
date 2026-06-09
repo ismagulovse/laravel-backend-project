@@ -18,26 +18,23 @@ class UserRoleSeeder extends Seeder
         $this->ensureBaseUsers();
 
         $actorId = $this->resolveActorId();
-        $adminRole = Role::query()->where('slug', 'admin')->first();
-        $userRole = Role::query()->where('slug', 'user')->first();
 
-        if ($adminRole === null || $userRole === null) {
-            return;
-        }
+        // Явно сопоставляем username → slug роли.
+        $assignments = [
+            'Adminuser'  => 'admin',
+            'Simpleuser' => 'user',
+            'Guestuser'  => 'guest',
+        ];
 
-        $users = User::query()->orderBy('id')->get();
+        foreach ($assignments as $username => $roleSlug) {
+            $user = User::query()->where('username', $username)->first();
+            $role = Role::query()->where('slug', $roleSlug)->first();
 
-        if ($users->isEmpty()) {
-            return;
-        }
+            if ($user === null || $role === null) {
+                continue;
+            }
 
-        $firstUser = $users->first();
-        if ($firstUser !== null) {
-            $this->attachOrRestore((int) $firstUser->id, (int) $adminRole->id, $actorId);
-        }
-
-        foreach ($users->slice(1) as $user) {
-            $this->attachOrRestore((int) $user->id, (int) $userRole->id, $actorId);
+            $this->attachOrRestore((int) $user->id, (int) $role->id, $actorId);
         }
     }
 
@@ -67,31 +64,24 @@ class UserRoleSeeder extends Seeder
 
     private function ensureBaseUsers(): void
     {
-        // Создаём базовых пользователей только если таблица пустая.
-        if (User::query()->exists()) {
-            return;
+        // Создаём каждого базового пользователя, если его ещё нет.
+        // firstOrCreate ищет по email; если не найдёт — создаст с указанными полями.
+        $baseUsers = [
+            ['username' => 'Adminuser',  'email' => 'admin_user@example.com',  'birthday' => '1995-01-01'],
+            ['username' => 'Simpleuser', 'email' => 'simple_user@example.com', 'birthday' => '1998-01-01'],
+            ['username' => 'Guestuser',  'email' => 'guest_user@example.com',  'birthday' => '2001-01-01'],
+        ];
+
+        foreach ($baseUsers as $data) {
+            User::query()->firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'username' => $data['username'],
+                    'password' => Hash::make('Password1!'),
+                    'birthday' => Carbon::parse($data['birthday']),
+                ],
+            );
         }
-
-        User::query()->create([
-            'username' => 'admin_user',
-            'email' => 'admin_user@example.com',
-            'password' => Hash::make('Password1!'),
-            'birthday' => Carbon::parse('1995-01-01'),
-        ]);
-
-        User::query()->create([
-            'username' => 'simple_user',
-            'email' => 'simple_user@example.com',
-            'password' => Hash::make('Password1!'),
-            'birthday' => Carbon::parse('1998-01-01'),
-        ]);
-
-        User::query()->create([
-            'username' => 'guest_user',
-            'email' => 'guest_user@example.com',
-            'password' => Hash::make('Password1!'),
-            'birthday' => Carbon::parse('2001-01-01'),
-        ]);
     }
 
     private function resolveActorId(): int

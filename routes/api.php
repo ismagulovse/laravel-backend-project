@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Auth\AuthController;
+use App\Http\Controllers\Api\ChangeLogController;
 use App\Http\Controllers\Api\Policy\PermissionController;
 use App\Http\Controllers\Api\Policy\RoleController;
 use App\Http\Controllers\Api\Policy\RolePermissionController;
@@ -57,6 +58,15 @@ Route::middleware('auth.check')->prefix('ref')->group(function (): void {
         Route::delete('role/{role}/permission/{permission}', [RolePermissionController::class, 'detach'])->middleware('permission.check:update-role');
         Route::patch('role/{role}/permission/{permission}/soft', [RolePermissionController::class, 'softDelete'])->middleware('permission.check:update-role');
         Route::patch('role/{role}/permission/{permission}/restore', [RolePermissionController::class, 'restore'])->middleware('permission.check:update-role');
+    });
+
+    // История изменений сущностей (audit log).
+    Route::get('user/{user}/story', [ChangeLogController::class, 'userStory']);
+    Route::post('changelog/{log}/restore', [ChangeLogController::class, 'restore']);
+
+    Route::prefix('policy')->group(function (): void {
+        Route::get('role/{role}/story', [ChangeLogController::class, 'roleStory']);
+        Route::get('permission/{permission}/story', [ChangeLogController::class, 'permissionStory']);
     });
 
     // Связь user <-> role.

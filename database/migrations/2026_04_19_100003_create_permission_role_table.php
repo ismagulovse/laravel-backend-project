@@ -10,12 +10,12 @@ return new class extends Migration
     {
         Schema::create('permission_role', function (Blueprint $table) {
             $table->id();
-            $table->integer('role_id');
-            $table->integer('permission_id');
+            $table->unsignedBigInteger('role_id');
+            $table->unsignedBigInteger('permission_id');
             $table->timestamp('created_at')->useCurrent();
-            $table->integer('created_by');
+            $table->unsignedBigInteger('created_by');
             $table->softDeletes();
-            $table->integer('deleted_by')->nullable();
+            $table->unsignedBigInteger('deleted_by')->nullable();
 
             $table->index('role_id');
             $table->index('permission_id');

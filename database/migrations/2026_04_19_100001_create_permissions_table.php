@@ -14,10 +14,10 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->timestamp('created_at')->useCurrent();
-            $table->integer('created_by');
+            $table->unsignedBigInteger('created_by');
             $table->timestamp('updated_at')->nullable();
             $table->softDeletes();
-            $table->integers('deleted_by')->nullable();
+            $table->unsignedBigInteger('deleted_by')->nullable();
 
             $table->index('created_by');
             $table->index('deleted_by');
