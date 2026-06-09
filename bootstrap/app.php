@@ -16,15 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.check'    => \App\Http\Middleware\CheckAuth::class,
             'guest.check'   => \App\Http\Middleware\CheckGuest::class,
             'refresh.check' => \App\Http\Middleware\CheckRefreshToken::class,
+            'permission.check' => \App\Http\Middleware\CheckPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-    $exceptions->render(function (\Throwable $e, $request) {
-        return response()->json([
-            'error'   => $e->getMessage(),
-            'file'    => $e->getFile(),
-            'line'    => $e->getLine(),
-        ], 500);
-    });
-})->create();
-
+        //
+    })->create();

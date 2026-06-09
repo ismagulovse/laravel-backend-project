@@ -22,7 +22,8 @@ class TokenService implements TokenServiceInterface
     {
         $this->accessTtl  = (int) env('ACCESS_TOKEN_TTL', 60);
         $this->refreshTtl = (int) env('REFRESH_TOKEN_TTL', 10080);
-        $this->maxTokens  = (int) env('MAX_ACTIVE_TOKENS', 5);
+        // Значение <= 0 считаем некорректным и подставляем безопасный минимум.
+        $this->maxTokens  = max(1, (int) env('MAX_ACTIVE_TOKENS', 5));
     }
 
     public function createTokenPair(User $user): array
@@ -160,9 +161,15 @@ private function generateSignedToken(int $userId, string $type): string
             ->orderBy('created_at', 'asc')
             ->get();
 
-        if ($activeTokens->count() >= $this->maxTokens) {
+        // Отзываем самые старые токены, пока не останется место под новый.
+        while ($activeTokens->count() >= $this->maxTokens) {
+            $oldest = $activeTokens->shift();
 
-            $this->revokeToken($activeTokens->first());
+            if ($oldest === null) {
+                break;
+            }
+
+            $this->revokeToken($oldest);
         }
     }
 

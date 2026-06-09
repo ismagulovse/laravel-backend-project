@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Auth;
 
 use App\DTO\AuthSuccessDTO;
+use App\DTO\RoleDTO;
 use App\DTO\TokenListDTO;
 use App\DTO\UserDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\Role;
 use App\Models\User;
+use App\Models\UserRole;
 use App\Services\TokenServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,6 +42,7 @@ class AuthController extends Controller
         }
 
         $tokens = $this->tokenService->createTokenPair($user);
+        $user->load('roles');
 
         $authDTO = new AuthSuccessDTO(
             accessToken:  $tokens['access_token'],
@@ -48,6 +52,7 @@ class AuthController extends Controller
                 username: $user->username,
                 email:    $user->email,
                 birthday: $user->birthday,
+                roles:    $this->mapRoleDTOs($user),
             ),
         );
 
@@ -55,7 +60,7 @@ class AuthController extends Controller
     }
 
 
-     public function register(RegisterRequest $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
         
         $dto = $request->toDTO();
@@ -67,7 +72,30 @@ class AuthController extends Controller
             'birthday' => $dto->birthday,
         ]);
 
+        // После регистрации автоматически назначаем базовую роль guest.
+        $guestRole = Role::query()->where('slug', 'guest')->first();
+        if ($guestRole !== null) {
+            $link = UserRole::query()
+                ->withTrashed()
+                ->where('user_id', $user->id)
+                ->where('role_id', $guestRole->id)
+                ->first();
+
+            if ($link === null) {
+                UserRole::query()->create([
+                    'user_id' => (int) $user->id,
+                    'role_id' => (int) $guestRole->id,
+                    'created_by' => (int) $user->id,
+                ]);
+            } elseif ($link->trashed()) {
+                $link->restore();
+                $link->deleted_by = null;
+                $link->save();
+            }
+        }
+
         $tokens = $this->tokenService->createTokenPair($user);
+        $user->load('roles');
 
         $authDTO = new AuthSuccessDTO(
             accessToken:  $tokens['access_token'],
@@ -77,6 +105,7 @@ class AuthController extends Controller
                 username: $user->username,
                 email:    $user->email,
                 birthday: $user->birthday,
+                roles:    $this->mapRoleDTOs($user),
             ),
         );
 
@@ -98,9 +127,43 @@ class AuthController extends Controller
             username: $user->username,
             email:    $user->email,
             birthday: $user->birthday,
+            roles:    $this->mapRoleDTOs($user->loadMissing('roles')),
         );
 
         return response()->json($userDTO->toArray(), 200);
+    }
+
+    public function permissions(Request $request): JsonResponse
+    {
+        /** @var \App\Models\User|null $user */
+        $user = $request->attributes->get('__auth_user');
+
+        if ($user === null) {
+            return response()->json([
+                'error' => 'Unauthorized'
+            ], 401);
+        }
+
+        $user->loadMissing('roles.permissions');
+
+        $permissions = $user->roles
+            ->flatMap(fn ($role) => $role->permissions->map(
+                fn ($permission): array => [
+                    'id' => (int) $permission->id,
+                    'name' => (string) $permission->name,
+                    'slug' => (string) $permission->slug,
+                    'description' => $permission->description,
+                ]
+            ))
+            ->unique('slug')
+            ->sortBy('slug')
+            ->values()
+            ->all();
+
+        return response()->json([
+            'user_id' => (int) $user->id,
+            'permissions' => $permissions,
+        ], 200);
     }
 
  
@@ -163,4 +226,32 @@ class AuthController extends Controller
                 );
             }
         }
+
+    /**
+     * @return RoleDTO[]
+     */
+    private function mapRoleDTOs(User $user): array
+    {
+        $priority = [
+            'admin' => 1,
+            'user' => 2,
+            'guest' => 3,
+        ];
+
+        return $user->roles
+            // Выводим в приоритетном порядке: Admin -> User -> Guest.
+            ->sortBy(static fn ($role): int => $priority[$role->slug] ?? 99)
+            ->map(static fn ($role): RoleDTO => new RoleDTO(
+                id: (int) $role->id,
+                name: (string) $role->name,
+                slug: (string) $role->slug,
+                description: $role->description,
+                createdAt: $role->created_at,
+                createdBy: (int) $role->created_by,
+                deletedAt: $role->deleted_at,
+                deletedBy: $role->deleted_by !== null ? (int) $role->deleted_by : null,
+            ))
+            ->values()
+            ->all();
+    }
 }
