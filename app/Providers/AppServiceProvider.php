@@ -12,8 +12,12 @@ use App\Observers\RoleObserver;
 use App\Observers\UserObserver;
 use App\Services\AuditService;
 use App\Services\AuditServiceInterface;
+use App\Services\DeploymentService;
+use App\Services\DeploymentServiceInterface;
 use App\Services\TokenService;
 use App\Services\TokenServiceInterface;
+use Illuminate\Contracts\Cache\Factory as CacheFactory;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,6 +34,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             AuditServiceInterface::class,
             AuditService::class,
+        );
+
+        // Сервис деплоя получает выделенный канал логов (deployment.log) через PSR LoggerInterface.
+        $this->app->bind(
+            DeploymentServiceInterface::class,
+            fn ($app) => new DeploymentService(
+                Log::channel('deployment'),
+                $app->make(CacheFactory::class),
+            ),
         );
     }
 

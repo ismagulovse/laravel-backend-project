@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\ChangeLogController;
+use App\Http\Controllers\Api\GitWebhookController;
 use App\Http\Controllers\Api\Policy\PermissionController;
 use App\Http\Controllers\Api\Policy\RoleController;
 use App\Http\Controllers\Api\Policy\RolePermissionController;
@@ -28,6 +29,9 @@ Route::prefix('auth')->group(function (): void {
         Route::post('refresh', [AuthController::class, 'refresh']);
     });
 });
+
+// Git Webhook для автоматического деплоя. Защищён секретным ключом внутри контроллера.
+Route::post('hooks/git', GitWebhookController::class);
 
 // Публичный список пользователей доступен гостю.
 Route::get('ref/user', [UserRoleController::class, 'indexUsers'])
