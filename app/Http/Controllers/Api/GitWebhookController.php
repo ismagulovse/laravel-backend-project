@@ -19,10 +19,6 @@ class GitWebhookController extends Controller
     ) {
     }
 
-    /**
-     * Принять webhook, проверить секрет и запустить деплой.
-     * Вся логика деплоя вынесена в DeploymentService (Single Responsibility).
-     */
     public function __invoke(Request $request): JsonResponse
     {
         if (! $this->secretIsValid($request->input('secret_key'))) {
@@ -53,7 +49,7 @@ class GitWebhookController extends Controller
     }
 
     /**
-     * Регистрозависимое сравнение секрета в постоянном времени (TC-08, TC-09).
+     * Регистрозависимое сравнение секрета в постоянном времени 
      */
     private function secretIsValid(mixed $provided): bool
     {

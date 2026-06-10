@@ -36,7 +36,6 @@ class AppServiceProvider extends ServiceProvider
             AuditService::class,
         );
 
-        // Сервис деплоя получает выделенный канал логов (deployment.log) через PSR LoggerInterface.
         $this->app->bind(
             DeploymentServiceInterface::class,
             fn ($app) => new DeploymentService(

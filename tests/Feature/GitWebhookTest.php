@@ -30,7 +30,6 @@ class GitWebhookTest extends TestCase
      * Подменить сервис деплоя так, чтобы git-команды не выполнялись по-настоящему,
      * а возвращали успешный замоканный процесс. Сохраняет порядок вызванных команд.
      *
-     * @param list<list<string>> &$captured Сюда складываются вызванные команды
      */
     private function fakeSuccessfulDeployment(array &$captured): void
     {

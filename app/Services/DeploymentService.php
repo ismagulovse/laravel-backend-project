@@ -7,7 +7,6 @@ namespace App\Services;
 use App\Exceptions\DeploymentFailedException;
 use App\Exceptions\DeploymentInProgressException;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
-use Illuminate\Contracts\Cache\LockTimeoutException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Process\Process;
 
@@ -16,19 +15,9 @@ class DeploymentService implements DeploymentServiceInterface
     // Имя ключа блокировки в кэше.
     private const LOCK_KEY = 'git-deployment-lock';
 
-    /**
-     * Фабрика процессов. Вынесена в свойство, чтобы её можно было подменить
-     * в тестах (Open/Closed) и не зависеть от конкретного способа запуска команд.
-     *
-     * @var callable(list<string>): Process
-     */
+   
     private $processFactory;
 
-    /**
-     * @param LoggerInterface                            $logger         Логгер деплоя (DIP)
-     * @param CacheFactory                               $cache          Фабрика кэша для блокировки
-     * @param callable(list<string>): Process|null       $processFactory Фабрика git-процессов
-     */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly CacheFactory $cache,
@@ -40,9 +29,7 @@ class DeploymentService implements DeploymentServiceInterface
         };
     }
 
-    /**
-     * {@inheritdoc}
-     */
+
     public function deploy(?string $clientIp = null): array
     {
         $branch = (string) config('git.default_branch');
@@ -74,11 +61,7 @@ class DeploymentService implements DeploymentServiceInterface
         }
     }
 
-    /**
-     * Выполнить последовательность git-команд под захваченной блокировкой.
-     *
-     * @return array<string, mixed>
-     */
+  
     private function runDeployment(string $branch, ?string $clientIp): array
     {
         $this->ensureGitRepository();
@@ -126,10 +109,6 @@ class DeploymentService implements DeploymentServiceInterface
 
     /**
      * Запустить одну git-команду и залогировать её результат.
-     *
-     * @param list<string> $command
-     *
-     * @return array<string, string> Описание выполненной команды
      */
     private function runCommand(array $command): array
     {
