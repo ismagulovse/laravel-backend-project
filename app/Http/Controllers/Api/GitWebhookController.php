@@ -21,6 +21,7 @@ class GitWebhookController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
+        
         if (! $this->secretIsValid($request->input('secret_key'))) {
             return response()->json(
                 ['message' => 'Invalid secret key'],
